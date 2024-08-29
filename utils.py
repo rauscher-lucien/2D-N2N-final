@@ -19,8 +19,8 @@ def get_device():
 
 def load_volume_folder_paths(txt_file_path):
     """
-    Reads a text file containing paths to folders (one per line) and returns a list of those paths,
-    stripping any extra quotes around the paths.
+    Reads a text file containing paths to folders (one per line) and returns a list of those paths.
+    Assumes the paths are already correctly formatted.
 
     Args:
         txt_file_path (str): The path to the text file containing folder paths.
@@ -32,12 +32,13 @@ def load_volume_folder_paths(txt_file_path):
         raise FileNotFoundError(f"The specified file does not exist: {txt_file_path}")
 
     with open(txt_file_path, 'r') as file:
-        folder_paths = [line.strip().strip('"') for line in file]
+        folder_paths = [line.strip() for line in file]
 
     # Optionally, you can add filtering to ignore empty lines or comments
     folder_paths = [path for path in folder_paths if path and not path.startswith("#")]
 
     return folder_paths
+
 
 
 
