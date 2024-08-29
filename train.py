@@ -93,6 +93,8 @@ class Trainer:
 
 
     def train(self):
+        save_interval_batches = 100  # Save intermediary results every 100 batches (adjust as needed)
+        progress_update_interval = 10  # Update progress bar every 10 batches
 
         transform_train = transforms.Compose([
             Normalize(self.mean, self.std),
@@ -105,7 +107,6 @@ class Trainer:
             ToNumpy(),
             Denormalize(self.mean, self.std)
         ])
-
 
         ### make dataset and loader ###
         dataset_train = TwoVolumeDataset(self.volume_folders, transform_train)
@@ -147,39 +148,40 @@ class Trainer:
                     loss.backward()
                     optimizer.step()
 
-                    # Update the progress bar
-                    pbar.set_postfix({"Batch Loss": loss.item()})
-                    pbar.update(1)
+                    # Update the progress bar every `progress_update_interval` batches
+                    if batch % progress_update_interval == 0 or batch == len(loader_train):
+                        pbar.set_postfix({"Batch Loss": loss.item()})
+                        pbar.update(progress_update_interval)
 
-            avg_train_loss = train_loss / len(loader_train)
-            self.writer.add_scalar('Loss/train', avg_train_loss, epoch)
+                    # Save intermediary results every `save_interval_batches`
+                    if batch % save_interval_batches == 0:
+                        avg_train_loss = train_loss / batch
+                        self.writer.add_scalar('Loss/train_batch', avg_train_loss, epoch * len(loader_train) + batch)
 
-            print(f'Epoch [{epoch}/{self.num_epoch}], Train Loss: {avg_train_loss:.4f}')
+                        # Save model checkpoint
+                        checkpoint_name = f"checkpoint_epoch_{epoch}_batch_{batch}.pth"
+                        checkpoint_path = os.path.join(self.checkpoints_dir, checkpoint_name)
+                        self.save(checkpoint_path, model, optimizer, epoch, avg_train_loss)
 
-            if epoch % self.disp_freq == 0:
-                # Assuming transform_inv_train can handle the entire stack
-                input_img = transform_inv_train(input_slice)[..., 0]
-                target_img = transform_inv_train(target_img)[..., 0]
-                output_img = transform_inv_train(output_img)[..., 0]
+                        print(f"Saved checkpoint at epoch {epoch}, batch {batch} with loss {avg_train_loss:.4f}")
 
-                for j in range(target_img.shape[0]):
-                    plt.imsave(os.path.join(self.train_results_dir, f"{j}_input.png"), input_img[j, :, :], cmap='gray')
-                    plt.imsave(os.path.join(self.train_results_dir, f"{j}_target.png"), target_img[j, :, :], cmap='gray')
-                    plt.imsave(os.path.join(self.train_results_dir, f"{j}_output.png"), output_img[j, :, :], cmap='gray')
+                avg_train_loss = train_loss / len(loader_train)
+                self.writer.add_scalar('Loss/train', avg_train_loss, epoch)
 
-            if avg_train_loss < best_train_loss:
-                best_train_loss = avg_train_loss
-                self.save(self.checkpoints_dir, model, optimizer, epoch, best_train_loss)
-                patience_counter = 0  # Reset patience counter
-                print(f"Saved best model at epoch {epoch} with training loss {best_train_loss:.4f}.")
-            else:
-                patience_counter += 1  # Increment patience counter
-                print(f'Patience Counter: {patience_counter}/{self.patience}')
+                print(f'Epoch [{epoch}/{self.num_epoch}], Train Loss: {avg_train_loss:.4f}')
 
-            # Check for early stopping
-            if patience_counter >= self.patience:
-                print(f'Early stopping triggered after {epoch} epochs')
-                break
+                if avg_train_loss < best_train_loss:
+                    best_train_loss = avg_train_loss
+                    self.save(self.checkpoints_dir, model, optimizer, epoch, best_train_loss)
+                    patience_counter = 0  # Reset patience counter
+                    print(f"Saved best model at epoch {epoch} with training loss {best_train_loss:.4f}.")
+                else:
+                    patience_counter += 1  # Increment patience counter
+                    print(f'Patience Counter: {patience_counter}/{self.patience}')
+
+                # Check for early stopping
+                if patience_counter >= self.patience:
+                    print(f'Early stopping triggered after {epoch} epochs')
+                    break
 
         self.writer.close()
-
