@@ -172,9 +172,9 @@ class Trainer:
                         output_img = transform_inv_train(output_img)[..., 0]
 
                         for j in range(target_img.shape[0]):
-                            plt.imsave(os.path.join(self.train_results_dir, f"{epoch}_batch_{batch}_input_{j}.png"), input_img[j, :, :], cmap='gray')
-                            plt.imsave(os.path.join(self.train_results_dir, f"{epoch}_batch_{batch}_target_{j}.png"), target_img[j, :, :], cmap='gray')
-                            plt.imsave(os.path.join(self.train_results_dir, f"{epoch}_batch_{batch}_output_{j}.png"), output_img[j, :, :], cmap='gray')
+                            plt.imsave(os.path.join(self.train_results_dir, f"input_{j}.png"), input_img[j, :, :], cmap='gray')
+                            plt.imsave(os.path.join(self.train_results_dir, f"target_{j}.png"), target_img[j, :, :], cmap='gray')
+                            plt.imsave(os.path.join(self.train_results_dir, f"output_{j}.png"), output_img[j, :, :], cmap='gray')
 
                 # Check for early stopping based on patience
                 if patience_counter >= self.patience:
