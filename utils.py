@@ -65,14 +65,15 @@ def create_train_dir(results_dir):
 
 
 
-def compute_global_mean_and_std(volume_folders, checkpoints_path):
+def compute_global_mean_and_std(volume_folders, checkpoints_path, num_volumes=2):
     """
-    Computes and saves the global mean and standard deviation across all TIFF stacks
-    in the given directories, saving the results in the checkpoints directory.
+    Computes and saves the global mean and standard deviation across the first `num_volumes` TIFF stacks
+    in each given directory, saving the results in the checkpoints directory.
 
     Parameters:
     - volume_folders: List of paths to directories containing the TIFF files.
     - checkpoints_path: Path to the directory where the normalization parameters will be saved.
+    - num_volumes (int, optional): Maximum number of volumes to consider in each folder (default is 2).
     """
     # Define the save_path in the checkpoints directory
     save_path = os.path.join(checkpoints_path, 'normalization_params.pkl')
@@ -86,32 +87,28 @@ def compute_global_mean_and_std(volume_folders, checkpoints_path):
             global_std = params['std']
         print(f"Loaded global mean and std parameters from {save_path}")
     else:
-        # First, count the total number of TIFF files
-        total_files = sum(
-            len([filename for filename in files if filename.lower().endswith(('.tif', '.tiff'))])
-            for folder in volume_folders
-            for _, _, files in os.walk(folder)
-        )
-        print(f"Total number of TIFF files to process: {total_files}")
-
+        # Initialize counters for mean and std calculations
         all_means = []
         all_stds = []
         file_counter = 0
 
         for folder in volume_folders:
-            for subdir, _, files in os.walk(folder):
-                # Sort the files alphabetically
-                files = sorted(files)
-                for filename in files:
-                    if filename.lower().endswith(('.tif', '.tiff')):
-                        filepath = os.path.join(subdir, filename)
-                        print(f"Processing volume {file_counter + 1}/{total_files}: {filepath}")
-                        
-                        stack = tifffile.imread(filepath)
-                        all_means.append(np.mean(stack))
-                        all_stds.append(np.std(stack))
-                        
-                        file_counter += 1
+            # Get sorted list of TIFF files in the folder
+            files = sorted([filename for filename in os.listdir(folder) if filename.lower().endswith(('.tif', '.tiff'))])
+
+            # Limit to the first `num_volumes` TIFF files
+            files = files[:min(len(files), num_volumes)]
+
+            for filename in files:
+                filepath = os.path.join(folder, filename)
+                print(f"Processing volume {file_counter + 1}: {filepath}")
+                
+                # Load the TIFF stack and compute mean and std
+                stack = tifffile.imread(filepath)
+                all_means.append(np.mean(stack))
+                all_stds.append(np.std(stack))
+                
+                file_counter += 1
 
         global_mean = np.mean(all_means)
         global_std = np.mean(all_stds)
@@ -123,6 +120,7 @@ def compute_global_mean_and_std(volume_folders, checkpoints_path):
         print(f"Global mean and std parameters saved to {save_path}")
 
     return global_mean, global_std
+
 
 
 
