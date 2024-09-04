@@ -100,6 +100,8 @@ def compute_global_mean_and_std(volume_folders, checkpoints_path):
 
         for folder in volume_folders:
             for subdir, _, files in os.walk(folder):
+                # Sort the files alphabetically
+                files = sorted(files)
                 for filename in files:
                     if filename.lower().endswith(('.tif', '.tiff')):
                         filepath = os.path.join(subdir, filename)
@@ -121,5 +123,6 @@ def compute_global_mean_and_std(volume_folders, checkpoints_path):
         print(f"Global mean and std parameters saved to {save_path}")
 
     return global_mean, global_std
+
 
 
