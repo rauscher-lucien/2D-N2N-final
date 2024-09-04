@@ -4,19 +4,21 @@ import tifffile
 import numpy as np
 
 class TwoVolumeDataset(torch.utils.data.Dataset):
-    def __init__(self, volume_folder_paths, transform=None):
+    def __init__(self, volume_folder_paths, transform=None, num_volumes=10):
         """
         Args:
             volume_folder_paths (list): List of paths to folders containing volumes.
             transform (callable, optional): Optional transform to be applied on a sample.
+            num_volumes (int, optional): Maximum number of volumes to consider in each folder.
         """
         self.volume_folder_paths = volume_folder_paths
         self.transform = transform
+        self.num_volumes = num_volumes
         self.slice_pairs = self._preload_slice_pairs()
 
     def _preload_slice_pairs(self):
         """
-        Preloads all possible slice pairs across all volumes and folders without loading volumes into memory.
+        Preloads all possible slice pairs across the first `n` volumes in each folder without loading volumes into memory.
         
         Returns:
             list: A list of tuples, each containing the paths of two volumes and the slice index.
@@ -24,6 +26,10 @@ class TwoVolumeDataset(torch.utils.data.Dataset):
         slice_pairs = []
         for folder in self.volume_folder_paths:
             volume_files = sorted([os.path.join(folder, f) for f in os.listdir(folder) if f.lower().endswith('.tiff')])
+
+            # Limit to the first `n` volumes
+            volume_files = volume_files[:min(len(volume_files), self.num_volumes)]
+
             if len(volume_files) > 1:
                 for i in range(len(volume_files) - 1):  # Consider adjacent volumes only
                     volume_1 = volume_files[i]
@@ -75,3 +81,4 @@ class TwoVolumeDataset(torch.utils.data.Dataset):
         target_slice = target_slice[np.newaxis, ...]
 
         return input_slice, target_slice
+
