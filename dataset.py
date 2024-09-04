@@ -4,7 +4,7 @@ import tifffile
 import numpy as np
 
 class TwoVolumeDataset(torch.utils.data.Dataset):
-    def __init__(self, volume_folder_paths, transform=None, num_volumes=10):
+    def __init__(self, volume_folder_paths, transform=None, num_volumes=2):
         """
         Args:
             volume_folder_paths (list): List of paths to folders containing volumes.
