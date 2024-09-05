@@ -153,3 +153,82 @@ class Denormalize(object):
         img_16bit = img_denormalized.astype(np.uint16)
         
         return img_16bit
+    
+
+
+
+
+
+
+
+class NormalizeInference(object):
+    """
+    Normalize an image using mean and standard deviation.
+    
+    Args:
+        mean (float or tuple): Mean for each channel.
+        std (float or tuple): Standard deviation for each channel.
+    """
+
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, data):
+        """
+        Args:
+            data (tuple): Containing input and target images to be normalized.
+        
+        Returns:
+            Tuple: Normalized input and target images.
+        """
+        input_img = data
+
+        # Normalize input image
+        input_normalized = (input_img - self.mean) / self.std
+
+        return input_normalized
+    
+
+
+
+class CropToMultipleOf16Inference(object):
+    """
+    Crop each slice in a stack of images to ensure their height and width are multiples of 32.
+    This is particularly useful for models that require input dimensions to be divisible by certain values.
+    """
+
+    def __call__(self, data):
+        """
+        Args:
+            stack (numpy.ndarray): Stack of images to be cropped, with shape (H, W, Num_Slices).
+
+        Returns:
+            numpy.ndarray: Stack of cropped images.
+        """
+
+        input_slice = data
+
+        h, w = data.shape
+
+        new_h = h - (h % 16)
+        new_w = w - (w % 16)
+
+        # Calculate cropping margins
+        top = (h - new_h) // 2
+        left = (w - new_w) // 2
+
+        # Generate indices for cropping
+        id_y = np.arange(top, top + new_h, 1)[:, np.newaxis].astype(np.int32)
+        id_x = np.arange(left, left + new_w, 1).astype(np.int32)
+
+        input_slice_cropped = input_slice[id_y, id_x].squeeze()
+
+        return input_slice_cropped
+    
+
+
+class ToTensorInference(object):
+    def __call__(self, img):
+        # Convert a single image
+        return torch.from_numpy(img.astype(np.float32))

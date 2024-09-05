@@ -123,4 +123,28 @@ def compute_global_mean_and_std(volume_folders, checkpoints_path, num_volumes=2)
 
 
 
+def load_normalization_params(data_dir):
+    """
+    Loads the mean and standard deviation values from a pickle file located in the specified data directory.
+
+    Parameters:
+    - data_dir: Path to the directory containing the 'normalization_params.pkl' file.
+
+    Returns:
+    - A tuple containing the mean and standard deviation values.
+    """
+    # Construct the path to the pickle file
+    load_path = os.path.join(data_dir, 'normalization_params.pkl')
+    
+    # Load the parameters from the pickle file
+    with open(load_path, 'rb') as f:
+        params = pickle.load(f)
+    
+    mean = params['mean']
+    std = params['std']
+    
+    return mean, std
+
+
+
 

@@ -163,7 +163,7 @@ class Trainer:
                             patience_counter = 0  # Reset patience counter
                             print(f"Saved best model at epoch {epoch}, batch {batch} with loss {best_train_loss:.4f}")
                         else:
-                            patience_counter += 1  # Increment patience counter
+                            #patience_counter += 1  # Increment patience counter
                             print(f'Patience Counter: {patience_counter}/{self.patience}')
 
                         # Save images for visual inspection (only when saving model)
